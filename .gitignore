@@ -26,3 +26,5 @@ Thumbs.db
 
 # Prisma
 backend/prisma/*.db
+# Client do Prisma gerado (criado pelo postinstall / prisma generate)
+backend/src/generated/
