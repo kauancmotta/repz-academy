@@ -1,0 +1,28 @@
+# Dependências
+node_modules/
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Logs e cobertura
+*.log
+npm-debug.log*
+coverage/
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Prisma
+backend/prisma/*.db
