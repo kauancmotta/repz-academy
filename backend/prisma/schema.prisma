@@ -1,0 +1,12 @@
+// Schema do Prisma do Repz.
+// Os modelos são adicionados por funcionalidade (001: User, 002: Invite, ...).
+// A URL do banco é lida de prisma.config.ts (variável DATABASE_URL).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
