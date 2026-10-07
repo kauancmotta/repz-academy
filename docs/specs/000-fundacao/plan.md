@@ -33,7 +33,9 @@ Dev: `typescript`, `tsx`, `nodemon`, `prisma`, tipos (`@types/*`).
 
 Scripts: `dev` (nodemon + tsx), `build`, `start`, `prisma:migrate`, `prisma:seed`.
 
-Variáveis (`.env.example`): `PORT=3333`, `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN=7d`, `FRONTEND_URL=http://localhost:3000`.
+Portas: backend **3001**, frontend **8080** (script `dev` do Next.js com `next dev -p 8080`), PostgreSQL **5432** (porta do contêiner).
+
+Variáveis (`.env.example`): `PORT=3001`, `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN=7d`, `FRONTEND_URL=http://localhost:8080`.
 
 ### Contrato
 
@@ -51,7 +53,7 @@ frontend/
 │   ├── components/
 │   ├── lib/api.ts      # cliente HTTP (fetch) com base em NEXT_PUBLIC_API_URL
 │   └── types/
-├── .env.example        # NEXT_PUBLIC_API_URL=http://localhost:3333/api
+├── .env.example        # NEXT_PUBLIC_API_URL=http://localhost:3001/api
 └── tailwind config
 ```
 

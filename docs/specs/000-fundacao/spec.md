@@ -28,11 +28,11 @@ Preparar a infraestrutura que permite as demais funcionalidades: repositório or
 ## Critérios de aceitação
 
 - [ ] `docker compose up -d` sobe o PostgreSQL 16 com dados persistidos em volume.
-- [ ] `npm run dev` no backend sobe a API em `http://localhost:3333` com nodemon.
+- [ ] `npm run dev` no backend sobe a API em `http://localhost:3001` com nodemon.
 - [ ] `GET /api/health` responde 200 com o banco conectado.
 - [ ] `/api/docs` abre o Swagger.
 - [ ] Rota inexistente retorna 404 no formato padrão de erro.
-- [ ] `npm run dev` no frontend abre a página inicial em `http://localhost:3000`.
+- [ ] `npm run dev` no frontend abre a página inicial em `http://localhost:8080`.
 - [ ] README descreve os passos e eles funcionam em máquina limpa.
 
 ## Fora de escopo
