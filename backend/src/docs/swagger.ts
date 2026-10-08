@@ -1,4 +1,5 @@
 import { authPaths, authSchemas, authTag } from "../modules/auth/auth.docs.js";
+import { linksPaths, linksSchemas, linksTag } from "../modules/links/links.docs.js";
 
 /**
  * Especificação OpenAPI 3 da API do Repz, exibida em /api/docs.
@@ -14,7 +15,7 @@ export const openApiDocument = {
       "Rotas protegidas usam JWT no header `Authorization: Bearer <token>`.",
   },
   servers: [{ url: "/api", description: "API do Repz" }],
-  tags: [{ name: "Saúde", description: "Verificação de funcionamento da API" }, authTag],
+  tags: [{ name: "Saúde", description: "Verificação de funcionamento da API" }, authTag, linksTag],
   paths: {
     "/health": {
       get: {
@@ -43,6 +44,7 @@ export const openApiDocument = {
       },
     },
     ...authPaths,
+    ...linksPaths,
   },
   components: {
     securitySchemes: {
@@ -50,6 +52,7 @@ export const openApiDocument = {
     },
     schemas: {
       ...authSchemas,
+      ...linksSchemas,
       Health: {
         type: "object",
         properties: {

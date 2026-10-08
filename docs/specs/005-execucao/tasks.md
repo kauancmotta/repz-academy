@@ -12,3 +12,4 @@
 | 005.8 | Tela de execução série a série | Gustavo | `feat: cria tela de execucao de treino serie a serie` |
 | 005.9 | Cronômetro de descanso | Gustavo | `feat: adiciona cronometro de descanso` |
 | 005.10 | Tela de resumo e retomada de sessão | Gustavo | `feat: cria resumo do treino e retomada de sessao` |
+| 005.11 | Preencher `lastSessionAt` na listagem de alunos do personal (`GET /students`) | Kauan | `feat: informa a ultima sessao na listagem de alunos` |

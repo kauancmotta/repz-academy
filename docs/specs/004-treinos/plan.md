@@ -58,7 +58,7 @@ model WorkoutItem {
 ### GET `/api/workouts/:id`
 
 - 200: `{ "id", "name", "readOnly": boolean, "days": [{ "weekday": "MONDAY", "items": [{ "id", "order", "exercise": {id, name, muscleGroup, videoEmbedUrl}, "sets", "targetReps", "restSeconds", "notes" }] }] }`
-- `readOnly = true` para aluno com personal e para treino arquivado.
+- `readOnly = true` para aluno com personal (inclui os treinos próprios dele, tratados como arquivados por regra) e para treino com `archivedAt` preenchido.
 
 ### PUT `/api/workouts/:id`
 

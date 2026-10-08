@@ -53,8 +53,12 @@ Remove o aluno do personal. 204 · 404 se não for aluno dele.
 ## Implementação
 
 - Código: 8 caracteres alfanuméricos maiúsculos gerados com `crypto.randomBytes`, sem caracteres ambíguos (0, O, 1, I).
-- Resgate em **transação** Prisma: valida convite, marca como usado, atualiza `personalId`, arquiva treinos próprios (`archivedAt = now()` onde `authorId = studentId` e `archivedAt` nulo).
-- Desvincular em transação: `personalId = null`, treinos próprios com `archivedAt = null`.
+- Resgate em **transação** Prisma: marca o convite como usado com `updateMany` condicional (`usedAt` nulo e `expiresAt` no futuro), o que impede uso duplo mesmo com requisições simultâneas, e atualiza `personalId` do aluno.
+- Aluno já vinculado ao mesmo personal: 422 `ALREADY_LINKED`, sem consumir o convite.
+- Desvincular (aluno ou personal): `personalId = null`.
+- **Treinos próprios não são gravados no vínculo.** A regra de RN-09 é calculada na funcionalidade 004 a partir de `personalId`. Gravar `archivedAt` no vínculo desarquivaria, ao sair do personal, treinos que o aluno arquivou manualmente; além disso, o model `Workout` só existe a partir da 004.
+- `lastSessionAt` de `GET /students` retorna `null` até a funcionalidade 005 (tarefa 005.11), quando as sessões passam a existir.
+- Cancelar convite apaga o registro (`DELETE`); convite usado não pode ser cancelado.
 - Helper `assertStudentOfPersonal(personalId, studentId)` reutilizado por treinos, histórico e evolução (RN-18).
 - Módulo: `src/modules/links/`.
 

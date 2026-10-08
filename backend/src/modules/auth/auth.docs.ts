@@ -1,14 +1,6 @@
-/** Documentação OpenAPI das rotas de autenticação (usada em src/docs/swagger.ts). */
+import { errorResponse } from "../../docs/helpers.js";
 
-const errorResponse = (description: string, code: string, message: string) => ({
-  description,
-  content: {
-    "application/json": {
-      schema: { $ref: "#/components/schemas/Error" },
-      example: { error: { code, message } },
-    },
-  },
-});
+/** Documentação OpenAPI das rotas de autenticação (usada em src/docs/swagger.ts). */
 
 export const authTag = { name: "Autenticação", description: "Cadastro, login e dados do usuário logado" };
 

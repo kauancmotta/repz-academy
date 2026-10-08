@@ -35,7 +35,7 @@ Estas regras são a fonte única. As specs referenciam pelo código (RN-xx).
 | RN-06 | O histórico (sessões e séries) pertence ao aluno. Ao encerrar ou trocar o vínculo, o personal antigo **perde** o acesso ao histórico. O novo personal **vê todo** o histórico anterior. |
 | RN-07 | Aluno **com** personal só visualiza o treino montado pelo personal. Não cria nem edita treinos. |
 | RN-08 | Aluno **sem** personal cria, edita e arquiva os próprios treinos. |
-| RN-09 | Ao se vincular a um personal, os treinos próprios do aluno ficam **arquivados** (somente leitura, histórico mantido). Ao encerrar o vínculo, voltam a ficar **editáveis**. |
+| RN-09 | Ao se vincular a um personal, os treinos próprios do aluno ficam **arquivados** (somente leitura, histórico mantido). Ao encerrar o vínculo, voltam a ficar **editáveis**. Implementado por regra de visibilidade (calculada a partir de `personalId`), **sem alterar `archivedAt`**, para não desarquivar treinos que o aluno arquivou manualmente. |
 | RN-10 | Treino é organizado por dia da semana. Cada item informa exercício, ordem, número de séries, repetições-alvo, descanso (opcional) e observação (opcional). |
 | RN-11 | Exercícios globais (seed) são somente leitura. Exercícios criados por um usuário só podem ser editados ou removidos por ele. Exercício em uso em algum treino ou sessão não pode ser removido (409). |
 | RN-12 | Exercício tem somente texto, com campo opcional de link do YouTube. O backend valida o link e devolve a URL de embed. |
@@ -89,12 +89,12 @@ erDiagram
 
 ## 5. Visibilidade de treinos (derivada de RN-07, RN-08, RN-09)
 
-Para um aluno, os treinos visíveis são os que têm `studentId = aluno` e `authorId = (personalId atual, ou o próprio aluno se não tiver personal)`. Treinos próprios com `archivedAt` preenchido aparecem na lista de arquivados, somente leitura.
+Para um aluno, os treinos visíveis são os que têm `studentId = aluno` e `authorId = (personalId atual, ou o próprio aluno se não tiver personal)`. Treinos próprios de um aluno que **tem** personal aparecem na lista de arquivados, somente leitura (regra calculada, sem gravar `archivedAt`). Treinos com `archivedAt` preenchido (arquivamento manual) também aparecem na lista de arquivados.
 
 ## 6. Padrões da API
 
 - Prefixo: `/api`.
-- Erros: `{ "error": { "code": "STRING", "message": "texto em português" } }`.
+- Erros: `{ "error": { "code": "STRING", "message": "texto em português", "details": "opcional" } }` (`details` traz, por exemplo, os campos inválidos em erros de validação).
 - Códigos: 400 validação, 401 não autenticado, 403 sem permissão, 404 não encontrado, 409 conflito, 422 regra de negócio violada.
 - Datas em ISO 8601 (UTC). Cargas como número decimal (kg).
 - Listagens simples sem paginação no MVP, exceto histórico de sessões (`?limit=&offset=`).

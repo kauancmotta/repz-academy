@@ -32,8 +32,8 @@ RN-07, RN-08, RN-09, RN-10, RN-18 e a seção 5 de `docs/arquitetura.md`.
 - [ ] Personal só cria treino para aluno vinculado a ele; outro aluno retorna 403.
 - [ ] Aluno com personal tenta criar ou editar treino e recebe 403 `STUDENT_HAS_PERSONAL`.
 - [ ] Aluno com personal vê apenas treinos do seu personal atual (não vê os do personal anterior).
-- [ ] Treinos próprios arquivados ao vincular aparecem somente na lista de arquivados e não podem ser editados.
-- [ ] Ao desvincular, treinos próprios voltam a ser editáveis.
+- [ ] Aluno que tem personal vê seus treinos próprios somente na lista de arquivados, sem poder editá-los (regra calculada a partir de `personalId`; `archivedAt` não é alterado).
+- [ ] Ao desvincular, treinos próprios voltam a ser editáveis, e os que o aluno arquivou manualmente continuam arquivados.
 - [ ] `sets` e `targetReps` devem ser inteiros positivos; `weekday` deve ser um dia válido.
 - [ ] `exerciseId` inexistente ou inacessível ao autor retorna 400.
 - [ ] Itens são devolvidos ordenados por `weekday` e `order`.
