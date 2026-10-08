@@ -1,3 +1,5 @@
+import { authPaths, authSchemas, authTag } from "../modules/auth/auth.docs.js";
+
 /**
  * Especificação OpenAPI 3 da API do Repz, exibida em /api/docs.
  * Cada funcionalidade acrescenta as suas rotas em "paths" e os seus modelos em "components.schemas".
@@ -12,7 +14,7 @@ export const openApiDocument = {
       "Rotas protegidas usam JWT no header `Authorization: Bearer <token>`.",
   },
   servers: [{ url: "/api", description: "API do Repz" }],
-  tags: [{ name: "Saúde", description: "Verificação de funcionamento da API" }],
+  tags: [{ name: "Saúde", description: "Verificação de funcionamento da API" }, authTag],
   paths: {
     "/health": {
       get: {
@@ -40,12 +42,14 @@ export const openApiDocument = {
         },
       },
     },
+    ...authPaths,
   },
   components: {
     securitySchemes: {
       bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
     },
     schemas: {
+      ...authSchemas,
       Health: {
         type: "object",
         properties: {
@@ -73,4 +77,4 @@ export const openApiDocument = {
       },
     },
   },
-} as const;
+};
