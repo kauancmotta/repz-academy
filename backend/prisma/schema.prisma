@@ -10,3 +10,21 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  PERSONAL
+  STUDENT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  // Preenchido somente para alunos (RN-03): o vínculo pertence ao aluno.
+  personalId   String?
+  personal     User?    @relation("PersonalStudents", fields: [personalId], references: [id])
+  students     User[]   @relation("PersonalStudents")
+  createdAt    DateTime @default(now())
+}
