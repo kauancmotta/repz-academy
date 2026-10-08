@@ -27,6 +27,7 @@ RN-01, RN-02 (ver `docs/arquitetura.md`).
 - [ ] Cadastro válido retorna 201 sem expor `passwordHash`.
 - [ ] E-mail já cadastrado retorna 409.
 - [ ] Senha com menos de 8 caracteres retorna 400.
+- [ ] Senha com mais de 72 caracteres retorna 400 (limite do bcrypt, que ignora o excedente).
 - [ ] `role` diferente de `PERSONAL`/`STUDENT` retorna 400.
 - [ ] Login com credenciais corretas retorna 200 com token.
 - [ ] Login com credenciais erradas retorna 401 com mensagem genérica (sem revelar qual campo errou).

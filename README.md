@@ -26,7 +26,7 @@ Trabalho acadêmico, Ciência da Computação, UNIFACVEST. Disciplinas: Laborat�
 
 ## Como rodar
 
-> Os passos são atualizados a cada funcionalidade entregue. Estado atual: fundação do backend (000).
+> Os passos são atualizados a cada funcionalidade entregue. Estado atual: backend com fundação (000) e autenticação (001).
 
 Pré-requisitos: Node.js 22.x, Docker e Docker Compose.
 
@@ -38,10 +38,10 @@ docker compose up -d
 cd backend
 cp .env.example .env
 npm install          # também gera o client do Prisma (postinstall)
+npm run prisma:migrate   # aplica as migrations no banco (necessário a partir da funcionalidade 001)
+# A partir da funcionalidade 003 (catálogo de exercícios): npm run prisma:seed
 npm run dev          # http://localhost:3001  |  Swagger: http://localhost:3001/api/docs
 # Verificação: curl http://localhost:3001/api/health  ->  {"status":"ok","database":"up"}
-# A partir da funcionalidade 001 (modelos no banco): npm run prisma:migrate
-# A partir da funcionalidade 003 (catálogo de exercícios): npm run prisma:seed
 
 # 3. Frontend (outro terminal)
 cd frontend
