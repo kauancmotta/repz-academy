@@ -49,6 +49,19 @@ Detalhe da sessão com séries agrupadas por exercício.
 - Autorização reutiliza `assertStudentOfPersonal` (002).
 - Módulo: `src/modules/progress/`.
 
+## Decisões de implementação
+
+- **Agregação em memória:** uma consulta traz as séries das sessões finalizadas do aluno e as funções puras de `calculations.ts` fazem o resto (em vez de `groupBy` ou `$queryRaw`). Facilita a conferência manual (ver `conferencia-calculos.md`) e o volume de dados por aluno é pequeno. Se um dia crescer, a consulta pode ser filtrada por período.
+- **Sem migration:** a 006 não cria models.
+- **PR:** varredura cronológica por `finishedAt`; a carga da sessão deve superar o máximo acumulado anterior. A primeira sessão do exercício e a carga igual não são PR. Mesma definição do resumo ao finalizar a sessão (005).
+- **Campos além do contrato inicial:** `volumeChangePct` e `muscleGroup` na lista de exercícios; `setsCount`, `weightChangePct` e `volumeChangePct` na série temporal; `previousBestKg` nos recordes; `totalSessions` na visão geral.
+- **Variação:** última sessão vs. anterior, em %, com 1 casa decimal; nula com menos de 2 sessões.
+- **Recorde atual (`personalRecord`):** maior carga já usada, na primeira vez em que foi atingida, com as repetições feitas naquela sessão.
+- **Frequência:** semana começa na segunda, no fuso America/Sao_Paulo (domingo à noite local conta na semana que termina). `weeks` de 1 a 52 (padrão 8), com zeros nas semanas vazias.
+- **Histórico:** `limit` 1 a 100 (padrão 20), `offset` a partir de 0. Sessões em andamento não aparecem.
+- **Visão geral:** últimos 5 recordes do aluno. Tem rota própria, `GET /api/students/:studentId/overview` (somente personal).
+- **Autorização:** `resolveTargetStudent` (em `links.access.ts`) vale para as rotas de aluno e personal: aluno sempre vê os próprios dados (o `studentId` é ignorado); personal precisa de aluno vinculado, senão 404 (inclui ex-alunos). Após trocar de personal, o antigo perde o acesso e o novo vê todo o histórico.
+
 ## Frontend (Recharts)
 
 - Aluno: lista de exercícios, gráfico de linha da carga máxima com marcador de PR, gráfico de barras do volume por sessão, gráfico de barras da frequência semanal, histórico de sessões.
