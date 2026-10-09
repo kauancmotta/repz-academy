@@ -29,13 +29,16 @@ RN-07, RN-08, RN-09, RN-10, RN-18 e a seção 5 de `docs/arquitetura.md`.
 
 ## Critérios de aceitação
 
-- [ ] Personal só cria treino para aluno vinculado a ele; outro aluno retorna 403.
+- [ ] Personal só cria treino para aluno vinculado a ele; outro aluno retorna 404 `STUDENT_NOT_FOUND` (RN-18: não revela se o aluno existe).
 - [ ] Aluno com personal tenta criar ou editar treino e recebe 403 `STUDENT_HAS_PERSONAL`.
 - [ ] Aluno com personal vê apenas treinos do seu personal atual (não vê os do personal anterior).
 - [ ] Aluno que tem personal vê seus treinos próprios somente na lista de arquivados, sem poder editá-los (regra calculada a partir de `personalId`; `archivedAt` não é alterado).
 - [ ] Ao desvincular, treinos próprios voltam a ser editáveis, e os que o aluno arquivou manualmente continuam arquivados.
 - [ ] `sets` e `targetReps` devem ser inteiros positivos; `weekday` deve ser um dia válido.
-- [ ] `exerciseId` inexistente ou inacessível ao autor retorna 400.
+- [ ] `exerciseId` inexistente ou inacessível ao autor retorna 400 `INVALID_EXERCISE`.
+- [ ] Treino arquivado não pode ser editado (422 `WORKOUT_ARCHIVED`); é preciso desarquivar antes.
+- [ ] Treino de outro personal, de ex-aluno ou de ex-personal retorna 404 `WORKOUT_NOT_FOUND`.
+- [ ] Aluno com personal que tenta arquivar ou remover treino recebe 403 `STUDENT_HAS_PERSONAL`.
 - [ ] Itens são devolvidos ordenados por `weekday` e `order`.
 - [ ] `DELETE` de treino com sessões retorna 409 `WORKOUT_HAS_SESSIONS`.
 - [ ] `GET /workouts/today` devolve os itens do dia da semana atual (fuso America/Sao_Paulo) dos treinos ativos do aluno.

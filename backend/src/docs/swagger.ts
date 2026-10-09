@@ -1,5 +1,6 @@
 import { authPaths, authSchemas, authTag } from "../modules/auth/auth.docs.js";
 import { exercisesPaths, exercisesSchemas, exercisesTag } from "../modules/exercises/exercises.docs.js";
+import { workoutsPaths, workoutsSchemas, workoutsTag } from "../modules/workouts/workouts.docs.js";
 import { linksPaths, linksSchemas, linksTag } from "../modules/links/links.docs.js";
 
 /**
@@ -16,7 +17,7 @@ export const openApiDocument = {
       "Rotas protegidas usam JWT no header `Authorization: Bearer <token>`.",
   },
   servers: [{ url: "/api", description: "API do Repz" }],
-  tags: [{ name: "Saúde", description: "Verificação de funcionamento da API" }, authTag, linksTag, exercisesTag],
+  tags: [{ name: "Saúde", description: "Verificação de funcionamento da API" }, authTag, linksTag, exercisesTag, workoutsTag],
   paths: {
     "/health": {
       get: {
@@ -47,6 +48,7 @@ export const openApiDocument = {
     ...authPaths,
     ...linksPaths,
     ...exercisesPaths,
+    ...workoutsPaths,
   },
   components: {
     securitySchemes: {
@@ -56,6 +58,7 @@ export const openApiDocument = {
       ...authSchemas,
       ...linksSchemas,
       ...exercisesSchemas,
+      ...workoutsSchemas,
       Health: {
         type: "object",
         properties: {

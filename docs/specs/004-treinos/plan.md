@@ -84,6 +84,17 @@ Mesmo body do POST (sem `studentId`); substitui os itens. 200 · 403 · 404.
 - Dia da semana de "hoje" calculado em `America/Sao_Paulo`.
 - Módulo: `src/modules/workouts/`.
 
+## Decisões de implementação
+
+- **Visibilidade** em `workouts.access.ts` (em vez de uma única `getVisibleWorkoutAuthorId`, já que o aluno enxerga dois autores): `visibleToStudent`, `visibleToPersonal`, `isArchivedForStudent` e `isReadOnlyForStudent`. Tudo calculado, nada gravado (RN-09).
+- **404 em vez de 403** para recursos fora do alcance (treino de outro personal, de ex-aluno, aluno não vinculado), para não revelar a existência (RN-18). O 403 `STUDENT_HAS_PERSONAL` vale para aluno com personal que tenta criar, editar, arquivar ou remover.
+- **Campos extras nas respostas:** `studentId`, `archived` (arquivado para quem vê, incluindo a regra derivada) e `readOnly` na listagem e no detalhe, para o frontend não recalcular regras.
+- **Limites de validação:** 1 a 100 itens; séries 1 a 20; repetições 1 a 100; descanso 0 a 3600 s; observação até 300 caracteres. Não pode haver dois itens com a mesma ordem no mesmo dia (também garantido por índice único no banco).
+- **Exercícios:** globais ou criados pelo autor do treino. O personal usa os dele; o aluno vê o exercício do personal no treino sem precisar tê-lo.
+- **Remoção (409):** a chave estrangeira de `WorkoutSession.workoutId` (005) deve ser restrita; o banco recusa a exclusão e o serviço devolve `WORKOUT_HAS_SESSIONS`. Os itens são apagados em cascata.
+- **Editar substitui os itens com novos ids.** Por isso `SetLog.workoutItemId` (005) não tem chave estrangeira e é só um dado de apoio; a evolução usa `exerciseId`.
+- **Arquivar e desarquivar** são idempotentes e devolvem o treino completo. Um aluno com personal não vê o próprio treino em "ativos", só em "arquivados".
+
 ## Frontend
 
 - Personal: tela de montagem com abas por dia da semana, seletor de exercício (003), campos de séries, repetições, descanso e observação, reordenação dos itens.

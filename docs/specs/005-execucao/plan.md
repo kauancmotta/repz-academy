@@ -34,6 +34,8 @@ model SetLog {
 }
 ```
 
+> **Atenção (decidido na 004):** editar um treino substitui os itens com novos ids. `SetLog.workoutItemId` não tem chave estrangeira (é opcional e apenas informativo) e `WorkoutSession.workoutId` deve ter chave estrangeira **restrita** (sem `onDelete`), para que remover treino com sessões retorne 409 `WORKOUT_HAS_SESSIONS`. Ao registrar uma série, o serviço deve validar que `workoutItemId` pertence ao treino da sessão no momento do registro.
+
 ## Contrato da API (STUDENT)
 
 ### POST `/api/sessions`
