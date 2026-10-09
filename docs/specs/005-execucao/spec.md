@@ -29,7 +29,7 @@ RN-13, RN-14, RN-15, RN-16 (ver `docs/arquitetura.md`).
 ## Critérios de aceitação
 
 - [ ] Só o próprio aluno inicia sessões, e só de treino visível a ele e não arquivado.
-- [ ] Aluno não pode ter duas sessões em andamento ao mesmo tempo (retorna a existente ou 409 `SESSION_IN_PROGRESS`).
+- [ ] Aluno não pode ter duas sessões em andamento ao mesmo tempo (409 `SESSION_IN_PROGRESS`, com o id da sessão existente em `details.sessionId`; vale também para inícios simultâneos).
 - [ ] `weightKg` aceita decimais (ex.: 7.5) e valores maiores ou iguais a 0; `reps` é inteiro maior que 0.
 - [ ] Série só pode ser registrada em sessão em andamento do próprio aluno.
 - [ ] `setNumber` não pode se repetir para o mesmo item na mesma sessão.
@@ -38,6 +38,10 @@ RN-13, RN-14, RN-15, RN-16 (ver `docs/arquitetura.md`).
 - [ ] "Da última vez" devolve as séries da sessão finalizada mais recente com o exercício, ou lista vazia.
 - [ ] Resumo marca como PR a série com carga acima da maior carga anterior do exercício (primeira vez do exercício não conta como PR).
 - [ ] Mudar o treino depois não apaga o histórico de séries.
+- [ ] Treino arquivado (inclusive o treino próprio de aluno que tem personal) não pode ser iniciado (422 `WORKOUT_ARCHIVED`); dia sem exercícios retorna 422 `NO_ITEMS_FOR_WEEKDAY`.
+- [ ] Série só aceita item do treino e do dia da sessão (400 `INVALID_WORKOUT_ITEM`).
+- [ ] O personal vinculado consulta o "da última vez" do aluno; após a troca de personal, o antigo perde o acesso (404) e o novo vê todo o histórico.
+- [ ] `GET /students` informa `lastSessionAt` (sessão finalizada mais recente do aluno).
 
 ## Fora de escopo
 

@@ -118,7 +118,7 @@ export const linksPaths = {
     get: {
       tags: ["Vínculo"],
       summary: "Lista os alunos vinculados ao personal (PERSONAL)",
-      description: "`lastSessionAt` é `null` até a funcionalidade de execução de treino (005).",
+      description: "`lastSessionAt` é a data da última sessão finalizada do aluno (`null` se ele nunca treinou).",
       security: bearer,
       responses: {
         "200": {
