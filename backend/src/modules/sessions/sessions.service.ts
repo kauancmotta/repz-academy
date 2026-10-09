@@ -3,7 +3,7 @@ import type { SetLog } from "../../generated/prisma/client.js";
 import { AppError } from "../../errors/app-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { toEmbedUrl } from "../exercises/youtube.js";
-import { assertStudentOfPersonal } from "../links/links.access.js";
+import { resolveTargetStudent } from "../links/links.access.js";
 import { isArchivedForStudent, loadStudentContext, visibleToStudent } from "../workouts/workouts.access.js";
 import { lastPerformanceByExercise } from "./sessions.performance.js";
 import type { LogSetInput, StartSessionInput, UpdateSetInput } from "./sessions.schemas.js";
@@ -231,16 +231,7 @@ export async function cancelSession(studentId: string, sessionId: string) {
 
 /** "Da última vez" de um exercício (RF-05). Aluno consulta o próprio; personal, de aluno vinculado. */
 export async function getLastPerformance(actor: Actor, exerciseId: string, studentIdParam?: string) {
-  let studentId: string;
-  if (actor.role === "PERSONAL") {
-    if (!studentIdParam) {
-      throw new AppError(400, "STUDENT_ID_REQUIRED", "Informe o aluno (studentId).");
-    }
-    await assertStudentOfPersonal(actor.id, studentIdParam);
-    studentId = studentIdParam;
-  } else {
-    studentId = actor.id;
-  }
+  const studentId = await resolveTargetStudent(actor, studentIdParam);
 
   const exercise = await prisma.exercise.findUnique({ where: { id: exerciseId }, select: { id: true } });
   if (!exercise) throw new AppError(404, "EXERCISE_NOT_FOUND", "Exercício não encontrado.");

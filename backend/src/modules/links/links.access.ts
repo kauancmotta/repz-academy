@@ -20,3 +20,21 @@ export async function assertStudentOfPersonal(personalId: string, studentId: str
 
   return student;
 }
+
+/**
+ * Resolve de quem são os dados consultados (sessões, evolução, "da última vez").
+ * Aluno: sempre os próprios (o parâmetro é ignorado). Personal: `studentId` é obrigatório e
+ * o aluno precisa estar vinculado a ele (RN-18, 404 caso contrário).
+ */
+export async function resolveTargetStudent(
+  actor: { id: string; role: "PERSONAL" | "STUDENT" },
+  studentIdParam?: string,
+): Promise<string> {
+  if (actor.role === "STUDENT") return actor.id;
+
+  if (!studentIdParam) {
+    throw new AppError(400, "STUDENT_ID_REQUIRED", "Informe o aluno (studentId).");
+  }
+  await assertStudentOfPersonal(actor.id, studentIdParam);
+  return studentIdParam;
+}
