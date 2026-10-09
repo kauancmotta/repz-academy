@@ -1,0 +1,4995 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Repz API",
+    "version": "0.1.0",
+    "description": "API do Repz, aplicativo de acompanhamento de treinos de academia. Rotas protegidas usam JWT no header `Authorization: Bearer <token>`."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "API do Repz"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Saúde",
+      "description": "Verificação de funcionamento da API"
+    },
+    {
+      "name": "Autenticação",
+      "description": "Cadastro, login e dados do usuário logado"
+    },
+    {
+      "name": "Vínculo",
+      "description": "Convites, vínculo entre aluno e personal e lista de alunos"
+    },
+    {
+      "name": "Exercícios",
+      "description": "Catálogo de exercícios (globais e do próprio usuário) com vídeo opcional do YouTube"
+    },
+    {
+      "name": "Treinos",
+      "description": "Montagem e visualização de treinos por dia da semana"
+    },
+    {
+      "name": "Execução",
+      "description": "Execução do treino série a série, resumo da sessão e \"da última vez\""
+    },
+    {
+      "name": "Evolução",
+      "description": "Métricas calculadas a partir das sessões finalizadas. O aluno vê os próprios dados; o personal informa `studentId` de um aluno vinculado a ele."
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Saúde"
+        ],
+        "summary": "Verifica a API e a conexão com o banco",
+        "responses": {
+          "200": {
+            "description": "API e banco funcionando",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "ok",
+                  "database": "up"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API no ar, mas o banco não respondeu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "error",
+                  "database": "down"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Cadastra um usuário (personal ou aluno)",
+        "description": "O perfil (`role`) é escolhido no cadastro e não pode ser alterado depois. O e-mail é único e não diferencia maiúsculas de minúsculas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuário criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "E-mail já cadastrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EMAIL_ALREADY_USED",
+                    "message": "Este e-mail já está cadastrado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Entra com e-mail e senha",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login realizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_CREDENTIALS",
+                    "message": "E-mail ou senha inválidos."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Retorna o usuário autenticado",
+        "description": "Para alunos, inclui o personal vinculado (ou `null`).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuário autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invites": {
+      "post": {
+        "tags": [
+          "Vínculo"
+        ],
+        "summary": "Gera um convite de vínculo (PERSONAL)",
+        "description": "Código de 8 caracteres, uso único, válido por 7 dias.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Convite criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteCreated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil PERSONAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Vínculo"
+        ],
+        "summary": "Lista os convites do personal (PERSONAL)",
+        "description": "Status: `ACTIVE`, `USED` ou `EXPIRED`. Do mais novo para o mais antigo.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Convites do personal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Invite"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil PERSONAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invites/redeem": {
+      "post": {
+        "tags": [
+          "Vínculo"
+        ],
+        "summary": "Resgata um convite e vincula o aluno ao personal (STUDENT)",
+        "description": "Se o aluno já tinha outro personal, o vínculo anterior é encerrado (troca de personal). O código aceita minúsculas e espaços ao redor.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Aluno vinculado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedeemInviteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Código inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVITE_NOT_FOUND",
+                    "message": "Convite não encontrado. Confira o código."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Convite usado, expirado ou aluno já vinculado a este personal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVITE_EXPIRED",
+                    "message": "Este convite expirou. Peça um novo ao seu personal."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invites/{id}": {
+      "delete": {
+        "tags": [
+          "Vínculo"
+        ],
+        "summary": "Cancela um convite ainda não utilizado (PERSONAL)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do convite",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Convite cancelado"
+          },
+          "400": {
+            "description": "Identificador inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil PERSONAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Convite não encontrado (ou de outro personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVITE_NOT_FOUND",
+                    "message": "Convite não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Convite já utilizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVITE_ALREADY_USED",
+                    "message": "Um convite já utilizado não pode ser cancelado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/link": {
+      "delete": {
+        "tags": [
+          "Vínculo"
+        ],
+        "summary": "Aluno encerra o próprio vínculo com o personal (STUDENT)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Vínculo encerrado"
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Aluno sem personal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NO_PERSONAL",
+                    "message": "Você não está vinculado a nenhum personal."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students": {
+      "get": {
+        "tags": [
+          "Vínculo"
+        ],
+        "summary": "Lista os alunos vinculados ao personal (PERSONAL)",
+        "description": "`lastSessionAt` é a data da última sessão finalizada do aluno (`null` se ele nunca treinou).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alunos do personal, em ordem alfabética",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Student"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil PERSONAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/{studentId}": {
+      "delete": {
+        "tags": [
+          "Vínculo"
+        ],
+        "summary": "Personal remove um aluno do seu vínculo (PERSONAL)",
+        "description": "O histórico do aluno é mantido; o personal deixa de ter acesso a ele.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do aluno",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Aluno removido do vínculo"
+          },
+          "400": {
+            "description": "Identificador inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil PERSONAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Aluno inexistente ou não vinculado a este personal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_NOT_FOUND",
+                    "message": "Aluno não encontrado entre os seus alunos."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exercises": {
+      "get": {
+        "tags": [
+          "Exercícios"
+        ],
+        "summary": "Lista os exercícios globais e os criados pelo usuário",
+        "description": "A busca (`search`) ignora acentos e maiúsculas. Exercícios de outros usuários nunca aparecem. Ordem alfabética.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "description": "Trecho do nome do exercício",
+            "schema": {
+              "type": "string",
+              "example": "supino"
+            }
+          },
+          {
+            "name": "muscleGroup",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por grupo muscular",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CHEST",
+                "BACK",
+                "SHOULDERS",
+                "BICEPS",
+                "TRICEPS",
+                "LEGS",
+                "GLUTES",
+                "CORE",
+                "CARDIO",
+                "OTHER"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exercícios encontrados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Exercise"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Exercícios"
+        ],
+        "summary": "Cria um exercício próprio",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExerciseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Exercício criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Exercise"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos ou link que não é do YouTube",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nome já usado por você",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EXERCISE_ALREADY_EXISTS",
+                    "message": "Você já tem um exercício com esse nome."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exercises/{id}": {
+      "patch": {
+        "tags": [
+          "Exercícios"
+        ],
+        "summary": "Edita um exercício próprio",
+        "description": "Envie apenas os campos a alterar. `description` e `videoUrl` aceitam `null` (ou texto vazio) para limpar o campo.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do exercício",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExerciseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exercício atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Exercise"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Exercício global ou de outro usuário",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você só pode alterar exercícios criados por você."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Exercício inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EXERCISE_NOT_FOUND",
+                    "message": "Exercício não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nome já usado por você",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EXERCISE_ALREADY_EXISTS",
+                    "message": "Você já tem um exercício com esse nome."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Exercícios"
+        ],
+        "summary": "Remove um exercício próprio",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do exercício",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Exercício removido"
+          },
+          "400": {
+            "description": "Identificador inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Exercício global ou de outro usuário",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você só pode alterar exercícios criados por você."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Exercício inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EXERCISE_NOT_FOUND",
+                    "message": "Exercício não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Exercício em uso em treino ou sessão",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EXERCISE_IN_USE",
+                    "message": "Este exercício está em uso em treinos ou sessões e não pode ser removido."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workouts": {
+      "post": {
+        "tags": [
+          "Treinos"
+        ],
+        "summary": "Cria um treino (PERSONAL para um aluno vinculado, ou ALUNO sem personal para si)",
+        "description": "Personal deve informar `studentId` de um aluno vinculado a ele. Para aluno, `studentId` é ignorado. Os exercícios devem ser globais ou criados pelo autor. Não pode haver dois itens com o mesmo `weekday` e `order`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Treino criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos, `studentId` ausente (personal) ou exercício indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_EXERCISE",
+                    "message": "Há exercícios inexistentes ou indisponíveis para você."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Aluno com personal não altera treinos (RN-07)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_HAS_PERSONAL",
+                    "message": "Você tem um personal vinculado e não pode criar nem alterar treinos. Peça ao seu personal."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Aluno não vinculado ao personal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_NOT_FOUND",
+                    "message": "Aluno não encontrado entre os seus alunos."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Treinos"
+        ],
+        "summary": "Lista os treinos visíveis ao usuário",
+        "description": "**Personal:** `studentId` é obrigatório; lista os treinos que ele criou para o aluno. **Aluno:** `studentId` é ignorado; vê os treinos do personal atual e os próprios. Com personal vinculado, os treinos próprios aparecem só em `archived=true`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "description": "Obrigatório para PERSONAL",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "description": "`false` (padrão) lista os ativos; `true` os arquivados",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Treinos encontrados, em ordem alfabética",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkoutSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro inválido ou `studentId` ausente (personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_ID_REQUIRED",
+                    "message": "Informe o aluno (studentId) para listar os treinos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Aluno não vinculado ao personal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_NOT_FOUND",
+                    "message": "Aluno não encontrado entre os seus alunos."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workouts/today": {
+      "get": {
+        "tags": [
+          "Treinos"
+        ],
+        "summary": "Treino de hoje do aluno (STUDENT)",
+        "description": "Itens do dia da semana atual (fuso America/Sao_Paulo) dos treinos ativos do aluno. Treinos sem itens hoje não aparecem.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Treinos de hoje",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayWorkouts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workouts/{id}": {
+      "get": {
+        "tags": [
+          "Treinos"
+        ],
+        "summary": "Detalha um treino, com itens agrupados por dia da semana",
+        "description": "`readOnly` é `true` para aluno com personal (inclusive nos treinos próprios) e para treino arquivado.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do treino",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Treino",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificador inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Treino inexistente ou fora do seu alcance (não revela se existe)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_NOT_FOUND",
+                    "message": "Treino não encontrado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Treinos"
+        ],
+        "summary": "Edita o treino (substitui nome e todos os itens)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do treino",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Treino atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos ou exercício indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_EXERCISE",
+                    "message": "Há exercícios inexistentes ou indisponíveis para você."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Aluno com personal não altera treinos (RN-07)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_HAS_PERSONAL",
+                    "message": "Você tem um personal vinculado e não pode criar nem alterar treinos. Peça ao seu personal."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Treino inexistente ou fora do seu alcance (não revela se existe)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_NOT_FOUND",
+                    "message": "Treino não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Treino arquivado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_ARCHIVED",
+                    "message": "Treino arquivado não pode ser editado. Desarquive-o primeiro."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Treinos"
+        ],
+        "summary": "Remove um treino sem sessões registradas",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do treino",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Treino removido"
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Aluno com personal não altera treinos (RN-07)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_HAS_PERSONAL",
+                    "message": "Você tem um personal vinculado e não pode criar nem alterar treinos. Peça ao seu personal."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Treino inexistente ou fora do seu alcance (não revela se existe)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_NOT_FOUND",
+                    "message": "Treino não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Treino com sessões registradas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_HAS_SESSIONS",
+                    "message": "Este treino já tem sessões registradas e não pode ser removido. Arquive-o para escondê-lo."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workouts/{id}/archive": {
+      "patch": {
+        "tags": [
+          "Treinos"
+        ],
+        "summary": "Arquiva o treino (idempotente)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do treino",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Treino arquivado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Aluno com personal não altera treinos (RN-07)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_HAS_PERSONAL",
+                    "message": "Você tem um personal vinculado e não pode criar nem alterar treinos. Peça ao seu personal."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Treino inexistente ou fora do seu alcance (não revela se existe)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_NOT_FOUND",
+                    "message": "Treino não encontrado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workouts/{id}/unarchive": {
+      "patch": {
+        "tags": [
+          "Treinos"
+        ],
+        "summary": "Desarquiva o treino (idempotente)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do treino",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Treino desarquivado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Aluno com personal não altera treinos (RN-07)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_HAS_PERSONAL",
+                    "message": "Você tem um personal vinculado e não pode criar nem alterar treinos. Peça ao seu personal."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Treino inexistente ou fora do seu alcance (não revela se existe)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_NOT_FOUND",
+                    "message": "Treino não encontrado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions": {
+      "post": {
+        "tags": [
+          "Execução"
+        ],
+        "summary": "Inicia a execução de um treino em um dia da semana (STUDENT)",
+        "description": "O treino precisa ser visível ao aluno, não estar arquivado e ter exercícios no dia escolhido. Cada exercício vem com `lastPerformance` (\"da última vez\"). O aluno só pode ter uma sessão em andamento.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sessão iniciada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Treino inexistente ou fora do alcance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_NOT_FOUND",
+                    "message": "Treino não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Já existe sessão em andamento (o id vem em `details.sessionId`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_IN_PROGRESS",
+                    "message": "Você já tem um treino em andamento."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Treino arquivado ou sem exercícios no dia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "WORKOUT_ARCHIVED",
+                    "message": "Treino arquivado não pode ser executado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/current": {
+      "get": {
+        "tags": [
+          "Execução"
+        ],
+        "summary": "Retoma a sessão em andamento (STUDENT)",
+        "description": "Devolve a sessão com as séries já registradas em cada exercício.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessão em andamento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhuma sessão em andamento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NO_ACTIVE_SESSION",
+                    "message": "Você não tem treino em andamento."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}": {
+      "delete": {
+        "tags": [
+          "Execução"
+        ],
+        "summary": "Cancela uma sessão em andamento e apaga as séries registradas (STUDENT)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da sessão",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sessão cancelada"
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sessão inexistente ou de outro aluno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_NOT_FOUND",
+                    "message": "Sessão não encontrada."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Sessão já finalizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_FINISHED",
+                    "message": "Esta sessão já foi finalizada e não aceita alterações."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/sets": {
+      "post": {
+        "tags": [
+          "Execução"
+        ],
+        "summary": "Registra uma série (STUDENT)",
+        "description": "`weightKg` aceita decimais (até 2 casas, ex.: 7.5) e 0; `reps` é inteiro maior que zero. O item deve ser do treino e do dia da sessão. `setNumber` não pode se repetir no mesmo item.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da sessão",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogSetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Série registrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoggedSet"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos ou item que não pertence à sessão",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_WORKOUT_ITEM",
+                    "message": "Esse exercício não faz parte do treino desta sessão. Recarregue o treino e tente de novo."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sessão inexistente ou de outro aluno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_NOT_FOUND",
+                    "message": "Sessão não encontrada."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Série já registrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SET_ALREADY_LOGGED",
+                    "message": "Essa série já foi registrada. Edite-a se precisar corrigir."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Sessão já finalizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_FINISHED",
+                    "message": "Esta sessão já foi finalizada e não aceita alterações."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/sets/{setId}": {
+      "patch": {
+        "tags": [
+          "Execução"
+        ],
+        "summary": "Corrige carga e/ou repetições de uma série (STUDENT)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da sessão",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da série",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Série atualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoggedSet"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sessão ou série inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SET_NOT_FOUND",
+                    "message": "Série não encontrada."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Sessão já finalizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_FINISHED",
+                    "message": "Esta sessão já foi finalizada e não aceita alterações."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Execução"
+        ],
+        "summary": "Remove uma série registrada por engano (STUDENT)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da sessão",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da série",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Série removida"
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sessão ou série inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SET_NOT_FOUND",
+                    "message": "Série não encontrada."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Sessão já finalizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_FINISHED",
+                    "message": "Esta sessão já foi finalizada e não aceita alterações."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/finish": {
+      "post": {
+        "tags": [
+          "Execução"
+        ],
+        "summary": "Finaliza a sessão e devolve o resumo (STUDENT)",
+        "description": "Volume = soma de carga × repetições. Há recorde pessoal (PR) no exercício cuja maior carga da sessão supera a maior carga de sessões finalizadas anteriores; a primeira vez do exercício não conta como PR.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da sessão",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessão finalizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil STUDENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sessão inexistente ou de outro aluno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_NOT_FOUND",
+                    "message": "Sessão não encontrada."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Sessão sem séries ou já finalizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EMPTY_SESSION",
+                    "message": "Registre ao menos uma série antes de finalizar, ou cancele o treino."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exercises/{id}/last-performance": {
+      "get": {
+        "tags": [
+          "Execução"
+        ],
+        "summary": "\"Da última vez\" de um exercício",
+        "description": "Séries da sessão finalizada mais recente em que o aluno fez o exercício, ou `{ \"sets\": [] }`. O aluno consulta o próprio histórico; o personal informa `studentId` de um aluno vinculado.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do exercício",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "description": "Obrigatório para PERSONAL; ignorado para aluno",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Última performance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LastPerformance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`studentId` ausente (personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_ID_REQUIRED",
+                    "message": "Informe o aluno (studentId)."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Exercício ou aluno inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EXERCISE_NOT_FOUND",
+                    "message": "Exercício não encontrado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/progress/exercises": {
+      "get": {
+        "tags": [
+          "Evolução"
+        ],
+        "summary": "Exercícios com histórico e variação da última sessão",
+        "description": "Só considera sessões finalizadas. Do exercício treinado mais recentemente para o mais antigo. Sem histórico, devolve lista vazia.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "description": "Obrigatório para PERSONAL (aluno vinculado); ignorado para aluno",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exercícios com histórico",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProgressExercise"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`studentId` ausente (personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_ID_REQUIRED",
+                    "message": "Informe o aluno (studentId)."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Aluno não vinculado ao personal (inclui ex-alunos)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_NOT_FOUND",
+                    "message": "Aluno não encontrado entre os seus alunos."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/progress/exercises/{exerciseId}": {
+      "get": {
+        "tags": [
+          "Evolução"
+        ],
+        "summary": "Evolução de um exercício, sessão a sessão",
+        "description": "Um ponto por sessão finalizada, em ordem cronológica: carga máxima, repetições na carga máxima, volume e `isPersonalRecord` (carga máxima maior que a de todas as sessões anteriores; a primeira sessão nunca é PR). `personalRecord` é a maior carga já usada (na primeira vez em que foi atingida). Sem histórico: `points` vazio.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "exerciseId",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do exercício",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "description": "Obrigatório para PERSONAL (aluno vinculado); ignorado para aluno",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Série temporal do exercício",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExerciseProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`studentId` ausente (personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_ID_REQUIRED",
+                    "message": "Informe o aluno (studentId)."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Exercício inexistente ou aluno não vinculado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EXERCISE_NOT_FOUND",
+                    "message": "Exercício não encontrado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/progress/frequency": {
+      "get": {
+        "tags": [
+          "Evolução"
+        ],
+        "summary": "Frequência semanal",
+        "description": "Sessões finalizadas por semana (a semana começa na segunda, fuso America/Sao_Paulo), da mais antiga para a semana atual. Semanas sem treino aparecem com zero.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "description": "Obrigatório para PERSONAL (aluno vinculado); ignorado para aluno",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "weeks",
+            "in": "query",
+            "required": false,
+            "description": "Quantidade de semanas (1 a 52)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 52,
+              "default": 8
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Frequência por semana",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WeeklyFrequency"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido ou `studentId` ausente (personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Aluno não vinculado ao personal (inclui ex-alunos)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_NOT_FOUND",
+                    "message": "Aluno não encontrado entre os seus alunos."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/progress/sessions": {
+      "get": {
+        "tags": [
+          "Evolução"
+        ],
+        "summary": "Histórico de sessões finalizadas (paginado)",
+        "description": "Da mais recente para a mais antiga.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "description": "Obrigatório para PERSONAL (aluno vinculado); ignorado para aluno",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de sessões",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido ou `studentId` ausente (personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Dados inválidos."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Aluno não vinculado ao personal (inclui ex-alunos)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_NOT_FOUND",
+                    "message": "Aluno não encontrado entre os seus alunos."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/progress/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Evolução"
+        ],
+        "summary": "Detalhe de uma sessão finalizada, com as séries de cada exercício",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da sessão",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "query",
+            "required": false,
+            "description": "Obrigatório para PERSONAL (aluno vinculado); ignorado para aluno",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessão detalhada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`studentId` ausente (personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_ID_REQUIRED",
+                    "message": "Informe o aluno (studentId)."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sessão inexistente, em andamento ou de outro aluno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_NOT_FOUND",
+                    "message": "Sessão não encontrada."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/{studentId}/overview": {
+      "get": {
+        "tags": [
+          "Evolução"
+        ],
+        "summary": "Visão geral de um aluno para o personal (PERSONAL)",
+        "description": "Última atividade, sessões nos últimos 30 dias, frequência das últimas 8 semanas e os 5 recordes mais recentes.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do aluno",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visão geral do aluno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentOverview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Token não informado ou inválido. Faça login novamente."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rota exclusiva do perfil PERSONAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Você não tem permissão para acessar este recurso."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Aluno não vinculado ao personal (inclui ex-alunos)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "STUDENT_NOT_FOUND",
+                    "message": "Aluno não encontrado entre os seus alunos."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password",
+          "role"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "example": "Maria Silva"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "maria@email.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72,
+            "example": "senha12345"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "PERSONAL",
+              "STUDENT"
+            ],
+            "example": "STUDENT"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "maria@email.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "senha12345"
+          }
+        }
+      },
+      "UserPublic": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Maria Silva"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "maria@email.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "PERSONAL",
+              "STUDENT"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserPublic"
+          },
+          "token": {
+            "type": "string",
+            "description": "JWT para o header Authorization: Bearer"
+          }
+        },
+        "required": [
+          "user",
+          "token"
+        ]
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "PERSONAL",
+              "STUDENT"
+            ]
+          },
+          "personal": {
+            "nullable": true,
+            "type": "object",
+            "description": "Personal vinculado ao aluno (nulo se não houver)",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "personal"
+        ]
+      },
+      "InviteCreated": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "example": "K7M2QX9A"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "USED",
+              "EXPIRED"
+            ],
+            "example": "ACTIVE"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "expiresAt",
+          "status"
+        ]
+      },
+      "Invite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "example": "K7M2QX9A"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "usedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "usedByStudent": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "USED",
+              "EXPIRED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "expiresAt",
+          "usedAt",
+          "usedByStudent",
+          "status"
+        ]
+      },
+      "RedeemInviteRequest": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "K7M2QX9A"
+          }
+        }
+      },
+      "RedeemInviteResponse": {
+        "type": "object",
+        "properties": {
+          "personal": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Carlos Personal"
+              }
+            }
+          }
+        },
+        "required": [
+          "personal"
+        ]
+      },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Maria Silva"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "maria@email.com"
+          },
+          "lastSessionAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "lastSessionAt"
+        ]
+      },
+      "Exercise": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Supino reto com barra"
+          },
+          "muscleGroup": {
+            "type": "string",
+            "enum": [
+              "CHEST",
+              "BACK",
+              "SHOULDERS",
+              "BICEPS",
+              "TRICEPS",
+              "LEGS",
+              "GLUTES",
+              "CORE",
+              "CARDIO",
+              "OTHER"
+            ],
+            "example": "CHEST"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "videoUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://youtu.be/dQw4w9WgXcQ"
+          },
+          "videoEmbedUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL para usar no iframe",
+            "example": "https://www.youtube.com/embed/dQw4w9WgXcQ"
+          },
+          "isGlobal": {
+            "type": "boolean",
+            "description": "true para exercícios do catálogo (somente leitura)"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "muscleGroup",
+          "description",
+          "videoUrl",
+          "videoEmbedUrl",
+          "isGlobal"
+        ]
+      },
+      "CreateExerciseRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "muscleGroup"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "example": "Remada cavalinho"
+          },
+          "muscleGroup": {
+            "type": "string",
+            "enum": [
+              "CHEST",
+              "BACK",
+              "SHOULDERS",
+              "BICEPS",
+              "TRICEPS",
+              "LEGS",
+              "GLUTES",
+              "CORE",
+              "CARDIO",
+              "OTHER"
+            ],
+            "example": "BACK"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "nullable": true
+          },
+          "videoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Formatos: youtube.com/watch?v=, youtu.be/ ou youtube.com/embed/",
+            "example": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+          }
+        }
+      },
+      "UpdateExerciseRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "muscleGroup": {
+            "type": "string",
+            "enum": [
+              "CHEST",
+              "BACK",
+              "SHOULDERS",
+              "BICEPS",
+              "TRICEPS",
+              "LEGS",
+              "GLUTES",
+              "CORE",
+              "CARDIO",
+              "OTHER"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "nullable": true
+          },
+          "videoUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CreateWorkoutRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "items"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "example": "Treino A"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Obrigatório para PERSONAL; ignorado para aluno"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "required": [
+                "exerciseId",
+                "weekday",
+                "order",
+                "sets",
+                "targetReps"
+              ],
+              "properties": {
+                "exerciseId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "weekday": {
+                  "type": "string",
+                  "enum": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+                  ],
+                  "example": "MONDAY"
+                },
+                "order": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "example": 1,
+                  "description": "Única por dia da semana"
+                },
+                "sets": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20,
+                  "example": 4
+                },
+                "targetReps": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "example": 10
+                },
+                "restSeconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3600,
+                  "nullable": true,
+                  "example": 60
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 300,
+                  "nullable": true,
+                  "example": "Pausa de 1s embaixo"
+                }
+              }
+            }
+          }
+        }
+      },
+      "UpdateWorkoutRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "items"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "required": [
+                "exerciseId",
+                "weekday",
+                "order",
+                "sets",
+                "targetReps"
+              ],
+              "properties": {
+                "exerciseId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "weekday": {
+                  "type": "string",
+                  "enum": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+                  ],
+                  "example": "MONDAY"
+                },
+                "order": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "example": 1,
+                  "description": "Única por dia da semana"
+                },
+                "sets": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20,
+                  "example": 4
+                },
+                "targetReps": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "example": 10
+                },
+                "restSeconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3600,
+                  "nullable": true,
+                  "example": 60
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 300,
+                  "nullable": true,
+                  "example": "Pausa de 1s embaixo"
+                }
+              }
+            }
+          }
+        }
+      },
+      "WorkoutSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Treino A"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "archived": {
+            "type": "boolean",
+            "description": "Arquivado para quem está vendo (inclui o arquivamento por regra)"
+          },
+          "readOnly": {
+            "type": "boolean"
+          },
+          "itemsCount": {
+            "type": "integer"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY",
+                "SUNDAY"
+              ]
+            }
+          }
+        }
+      },
+      "WorkoutDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "readOnly": {
+            "type": "boolean"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekday": {
+                  "type": "string",
+                  "enum": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+                  ]
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "order": {
+                        "type": "integer"
+                      },
+                      "exercise": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "Supino reto com barra"
+                          },
+                          "muscleGroup": {
+                            "type": "string",
+                            "example": "CHEST"
+                          },
+                          "videoEmbedUrl": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      },
+                      "sets": {
+                        "type": "integer"
+                      },
+                      "targetReps": {
+                        "type": "integer"
+                      },
+                      "restSeconds": {
+                        "type": "integer",
+                        "nullable": true
+                      },
+                      "notes": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TodayWorkouts": {
+        "type": "object",
+        "properties": {
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ],
+            "example": "MONDAY"
+          },
+          "workouts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "order": {
+                        "type": "integer"
+                      },
+                      "exercise": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "Supino reto com barra"
+                          },
+                          "muscleGroup": {
+                            "type": "string",
+                            "example": "CHEST"
+                          },
+                          "videoEmbedUrl": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      },
+                      "sets": {
+                        "type": "integer"
+                      },
+                      "targetReps": {
+                        "type": "integer"
+                      },
+                      "restSeconds": {
+                        "type": "integer",
+                        "nullable": true
+                      },
+                      "notes": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "StartSessionRequest": {
+        "type": "object",
+        "required": [
+          "workoutId",
+          "weekday"
+        ],
+        "properties": {
+          "workoutId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ],
+            "example": "MONDAY"
+          }
+        }
+      },
+      "LogSetRequest": {
+        "type": "object",
+        "required": [
+          "workoutItemId",
+          "setNumber",
+          "weightKg",
+          "reps"
+        ],
+        "properties": {
+          "workoutItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "setNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "example": 1
+          },
+          "weightKg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999.99,
+            "example": 7.5
+          },
+          "reps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "example": 12
+          }
+        }
+      },
+      "UpdateSetRequest": {
+        "type": "object",
+        "properties": {
+          "weightKg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999.99,
+            "example": 8
+          },
+          "reps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "example": 10
+          }
+        }
+      },
+      "LoggedSet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workoutItemId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "exerciseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "setNumber": {
+            "type": "integer"
+          },
+          "weightKg": {
+            "type": "number",
+            "example": 7.5
+          },
+          "reps": {
+            "type": "integer"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LastPerformance": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "setNumber": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "weightKg": {
+                  "type": "number",
+                  "example": 7.5
+                },
+                "reps": {
+                  "type": "integer",
+                  "example": 12
+                }
+              }
+            }
+          }
+        }
+      },
+      "SessionView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workoutId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workoutName": {
+            "type": "string"
+          },
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Use como `workoutItemId` ao registrar séries"
+                },
+                "order": {
+                  "type": "integer"
+                },
+                "exercise": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "muscleGroup": {
+                      "type": "string"
+                    },
+                    "videoEmbedUrl": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                },
+                "sets": {
+                  "type": "integer",
+                  "description": "Séries planejadas"
+                },
+                "targetReps": {
+                  "type": "integer"
+                },
+                "restSeconds": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "lastPerformance": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "sets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "setNumber": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "weightKg": {
+                            "type": "number",
+                            "example": 7.5
+                          },
+                          "reps": {
+                            "type": "integer",
+                            "example": 12
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "loggedSets": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoggedSet"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SessionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workoutId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workoutName": {
+            "type": "string"
+          },
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "example": 3300
+          },
+          "totalVolumeKg": {
+            "type": "number",
+            "example": 4120.5
+          },
+          "setsCount": {
+            "type": "integer",
+            "example": 16
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "exerciseId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "exerciseName": {
+                  "type": "string"
+                },
+                "setsCount": {
+                  "type": "integer"
+                },
+                "volumeKg": {
+                  "type": "number"
+                },
+                "maxWeightKg": {
+                  "type": "number"
+                },
+                "previousBestKg": {
+                  "type": "number",
+                  "nullable": true,
+                  "description": "Maior carga anterior (nulo na primeira vez)"
+                }
+              }
+            }
+          },
+          "personalRecords": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "exerciseId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "exerciseName": {
+                  "type": "string"
+                },
+                "weightKg": {
+                  "type": "number"
+                },
+                "reps": {
+                  "type": "integer",
+                  "description": "Maior repetição entre as séries com a carga recorde"
+                },
+                "previousBestKg": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ProgressExercise": {
+        "type": "object",
+        "properties": {
+          "exerciseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "muscleGroup": {
+            "type": "string",
+            "example": "CHEST"
+          },
+          "sessionsCount": {
+            "type": "integer",
+            "example": 4
+          },
+          "lastMaxWeightKg": {
+            "type": "number",
+            "example": 45
+          },
+          "weightChangePct": {
+            "type": "number",
+            "nullable": true,
+            "example": 5.9,
+            "description": "Carga máxima: última sessão vs. anterior (%)"
+          },
+          "volumeChangePct": {
+            "type": "number",
+            "nullable": true,
+            "example": -26.1,
+            "description": "Volume: última sessão vs. anterior (%)"
+          },
+          "lastSessionAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ExerciseProgress": {
+        "type": "object",
+        "properties": {
+          "exercise": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "muscleGroup": {
+                "type": "string"
+              }
+            }
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sessionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "maxWeightKg": {
+                  "type": "number",
+                  "example": 42.5
+                },
+                "repsAtMax": {
+                  "type": "integer",
+                  "example": 8
+                },
+                "volumeKg": {
+                  "type": "number",
+                  "example": 1080
+                },
+                "setsCount": {
+                  "type": "integer",
+                  "example": 3
+                },
+                "isPersonalRecord": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "personalRecord": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "weightKg": {
+                "type": "number",
+                "example": 45
+              },
+              "reps": {
+                "type": "integer",
+                "example": 6
+              },
+              "date": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "sessionId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          "weightChangePct": {
+            "type": "number",
+            "nullable": true
+          },
+          "volumeChangePct": {
+            "type": "number",
+            "nullable": true
+          }
+        }
+      },
+      "WeeklyFrequency": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-05",
+            "description": "Segunda-feira da semana"
+          },
+          "sessions": {
+            "type": "integer",
+            "example": 3
+          }
+        }
+      },
+      "SessionHistory": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "example": 12
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "workoutName": {
+                  "type": "string"
+                },
+                "weekday": {
+                  "type": "string",
+                  "enum": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+                  ]
+                },
+                "startedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "finishedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "durationSeconds": {
+                  "type": "integer"
+                },
+                "totalVolumeKg": {
+                  "type": "number"
+                },
+                "setsCount": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SessionDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SessionSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "exercises": {
+                "type": "array",
+                "description": "Mesmos campos do resumo, mais as séries de cada exercício",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "exerciseId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "exerciseName": {
+                      "type": "string"
+                    },
+                    "setsCount": {
+                      "type": "integer"
+                    },
+                    "volumeKg": {
+                      "type": "number"
+                    },
+                    "maxWeightKg": {
+                      "type": "number"
+                    },
+                    "previousBestKg": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "sets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "setNumber": {
+                            "type": "integer"
+                          },
+                          "weightKg": {
+                            "type": "number"
+                          },
+                          "reps": {
+                            "type": "integer"
+                          },
+                          "completedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "StudentOverview": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "lastSessionAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "totalSessions": {
+            "type": "integer"
+          },
+          "sessionsLast30Days": {
+            "type": "integer"
+          },
+          "weeklyFrequency": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeeklyFrequency"
+            }
+          },
+          "recentPersonalRecords": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "exerciseId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "exerciseName": {
+                  "type": "string",
+                  "example": "Supino reto com barra"
+                },
+                "weightKg": {
+                  "type": "number",
+                  "example": 45
+                },
+                "reps": {
+                  "type": "integer",
+                  "example": 6
+                },
+                "previousBestKg": {
+                  "type": "number",
+                  "example": 42.5
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "sessionId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "database"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "VALIDATION_ERROR"
+              },
+              "message": {
+                "type": "string",
+                "example": "Dados inválidos."
+              },
+              "details": {
+                "description": "Informações adicionais (por exemplo, campos inválidos). Opcional."
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    }
+  }
+}

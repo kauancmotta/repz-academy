@@ -11,6 +11,9 @@ export const app = express();
 app.use(cors({ origin: env.FRONTEND_URL }));
 app.use(express.json());
 
+app.get("/api/openapi.json", (_req, res) => {
+  res.json(openApiDocument);
+});
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 app.use("/api", router);
 
