@@ -147,8 +147,15 @@ export async function listStudents(personalId: string) {
     select: { id: true, name: true, email: true },
   });
 
-  // lastSessionAt passa a ser preenchido na funcionalidade 005 (tarefa 005.11).
-  return students.map((student) => ({ ...student, lastSessionAt: null as Date | null }));
+  // Data da sessão finalizada mais recente de cada aluno (útil para ver quem parou de treinar).
+  const lastSessions = await prisma.workoutSession.groupBy({
+    by: ["studentId"],
+    where: { studentId: { in: students.map((student) => student.id) }, finishedAt: { not: null } },
+    _max: { finishedAt: true },
+  });
+  const lastByStudent = new Map(lastSessions.map((row) => [row.studentId, row._max.finishedAt]));
+
+  return students.map((student) => ({ ...student, lastSessionAt: lastByStudent.get(student.id) ?? null }));
 }
 
 export async function removeStudent(personalId: string, studentId: string) {
