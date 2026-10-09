@@ -1,5 +1,5 @@
 // Schema do Prisma do Repz.
-// Os modelos são adicionados por funcionalidade (001: User, 002: Invite, ...).
+// Os modelos são adicionados por funcionalidade (001: User, 002: Invite, 003: Exercise, ...).
 // A URL do banco é lida de prisma.config.ts (variável DATABASE_URL).
 
 generator client {
@@ -32,6 +32,9 @@ model User {
   invitesCreated Invite[] @relation("PersonalInvites")
   invitesUsed    Invite[] @relation("StudentInvites")
 
+  // Exercícios criados pelo usuário (003).
+  exercises Exercise[]
+
   @@index([personalId])
 }
 
@@ -49,4 +52,36 @@ model Invite {
   createdAt       DateTime  @default(now())
 
   @@index([personalId])
+}
+
+enum MuscleGroup {
+  CHEST
+  BACK
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  LEGS
+  GLUTES
+  CORE
+  CARDIO
+  OTHER
+}
+
+// Exercício do catálogo (RN-11, RN-12). createdById nulo = exercício global (seed).
+// Quando treinos e sessões passarem a referenciar o exercício (004 e 005), a chave estrangeira
+// sem onDelete impede a remoção de um exercício em uso (o serviço converte o erro em 409).
+model Exercise {
+  id          String      @id @default(uuid())
+  name        String
+  muscleGroup MuscleGroup
+  description String?
+  // Link original informado pelo usuário; a URL de embed é calculada na resposta.
+  videoUrl    String?
+  createdById String?
+  createdBy   User?       @relation(fields: [createdById], references: [id])
+  createdAt   DateTime    @default(now())
+
+  // O PostgreSQL trata NULL como diferente, então a unicidade dos globais é garantida pelo seed.
+  @@unique([name, createdById])
+  @@index([createdById])
 }
