@@ -1,5 +1,5 @@
 // Schema do Prisma do Repz.
-// Os modelos são adicionados por funcionalidade (001: User, 002: Invite, 003: Exercise, ...).
+// Os modelos são adicionados por funcionalidade (001: User, 002: Invite, 003: Exercise, 004: Workout, ...).
 // A URL do banco é lida de prisma.config.ts (variável DATABASE_URL).
 
 generator client {
@@ -34,6 +34,10 @@ model User {
 
   // Exercícios criados pelo usuário (003).
   exercises Exercise[]
+
+  // Treinos: como aluno (destinatário) e como autor (004).
+  workoutsAsStudent Workout[] @relation("StudentWorkouts")
+  workoutsAuthored  Workout[] @relation("AuthoredWorkouts")
 
   @@index([personalId])
 }
@@ -81,7 +85,57 @@ model Exercise {
   createdBy   User?       @relation(fields: [createdById], references: [id])
   createdAt   DateTime    @default(now())
 
+  // Itens de treino que usam este exercício (004). A chave estrangeira restrita impede remover exercício em uso.
+  workoutItems WorkoutItem[]
+
   // O PostgreSQL trata NULL como diferente, então a unicidade dos globais é garantida pelo seed.
   @@unique([name, createdById])
   @@index([createdById])
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+// Treino de um aluno (RN-07 a RN-10). O autor é o personal ou o próprio aluno (sem personal).
+// archivedAt só registra o arquivamento manual; o "arquivado por regra" (treino próprio de aluno
+// com personal) é calculado no serviço e nunca gravado (ver docs/arquitetura.md, seção 5).
+model Workout {
+  id         String        @id @default(uuid())
+  name       String
+  studentId  String
+  student    User          @relation("StudentWorkouts", fields: [studentId], references: [id])
+  authorId   String
+  author     User          @relation("AuthoredWorkouts", fields: [authorId], references: [id])
+  archivedAt DateTime?
+  items      WorkoutItem[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([studentId])
+  @@index([authorId])
+}
+
+// Item de treino: um exercício em um dia da semana (RN-10).
+model WorkoutItem {
+  id          String   @id @default(uuid())
+  workoutId   String
+  workout     Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+  weekday     Weekday
+  order       Int
+  sets        Int
+  targetReps  Int
+  restSeconds Int?
+  notes       String?
+
+  @@unique([workoutId, weekday, order])
+  @@index([exerciseId])
 }
