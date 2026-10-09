@@ -1,5 +1,5 @@
 // Schema do Prisma do Repz.
-// Os modelos são adicionados por funcionalidade (001: User, 002: Invite, 003: Exercise, 004: Workout, ...).
+// Os modelos são adicionados por funcionalidade (001: User, 002: Invite, 003: Exercise, 004: Workout, 005: WorkoutSession/SetLog, ...).
 // A URL do banco é lida de prisma.config.ts (variável DATABASE_URL).
 
 generator client {
@@ -38,6 +38,9 @@ model User {
   // Treinos: como aluno (destinatário) e como autor (004).
   workoutsAsStudent Workout[] @relation("StudentWorkouts")
   workoutsAuthored  Workout[] @relation("AuthoredWorkouts")
+
+  // Sessões de treino executadas pelo aluno (005).
+  sessions WorkoutSession[]
 
   @@index([personalId])
 }
@@ -88,6 +91,9 @@ model Exercise {
   // Itens de treino que usam este exercício (004). A chave estrangeira restrita impede remover exercício em uso.
   workoutItems WorkoutItem[]
 
+  // Séries realizadas deste exercício (005). Também impede remover exercício com histórico.
+  setLogs SetLog[]
+
   // O PostgreSQL trata NULL como diferente, então a unicidade dos globais é garantida pelo seed.
   @@unique([name, createdById])
   @@index([createdById])
@@ -115,6 +121,8 @@ model Workout {
   author     User          @relation("AuthoredWorkouts", fields: [authorId], references: [id])
   archivedAt DateTime?
   items      WorkoutItem[]
+  // Sem onDelete: treino com sessões não pode ser removido (409 WORKOUT_HAS_SESSIONS).
+  sessions   WorkoutSession[]
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
 
@@ -137,5 +145,40 @@ model WorkoutItem {
   notes       String?
 
   @@unique([workoutId, weekday, order])
+  @@index([exerciseId])
+}
+
+// Execução de um treino em um dia da semana (RN-13). Em andamento enquanto finishedAt é nulo;
+// cada aluno tem no máximo uma sessão em andamento (garantido no serviço).
+model WorkoutSession {
+  id         String    @id @default(uuid())
+  studentId  String
+  student    User      @relation(fields: [studentId], references: [id])
+  workoutId  String
+  workout    Workout   @relation(fields: [workoutId], references: [id])
+  weekday    Weekday
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  sets       SetLog[]
+
+  @@index([studentId, finishedAt])
+  @@index([workoutId])
+}
+
+// Série realizada. exerciseId fica direto na série para a evolução independer de edições no treino.
+// workoutItemId não tem chave estrangeira: editar o treino troca os ids dos itens e o histórico deve permanecer.
+model SetLog {
+  id            String         @id @default(uuid())
+  sessionId     String
+  session       WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  workoutItemId String?
+  exerciseId    String
+  exercise      Exercise       @relation(fields: [exerciseId], references: [id])
+  setNumber     Int
+  weightKg      Decimal        @db.Decimal(6, 2)
+  reps          Int
+  completedAt   DateTime       @default(now())
+
+  @@unique([sessionId, workoutItemId, setNumber])
   @@index([exerciseId])
 }
