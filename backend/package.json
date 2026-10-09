@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev && prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "postprisma:migrate": "prisma generate",
     "prisma:seed": "prisma generate && prisma db seed"
   },
   "dependencies": {
