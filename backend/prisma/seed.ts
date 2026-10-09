@@ -83,6 +83,63 @@ const exercises: SeedExercise[] = [
   { name: "Corda de pular", muscleGroup: "CARDIO", description: "Saltos contínuos com a corda, aterrissando com a ponta dos pés." },
 ];
 
+// Vídeos de execução (YouTube) de todos os exercícios do catálogo.
+// Cada link foi conferido (existe e permite incorporação). Se algum sair do ar, troque a URL aqui e rode o seed de novo.
+const videos: Record<string, string> = {
+  "Supino reto com barra": "https://www.youtube.com/watch?v=vIGvt-vgrvY",
+  "Supino inclinado com halteres": "https://www.youtube.com/watch?v=RGeSgQmO1EU",
+  "Crucifixo com halteres": "https://www.youtube.com/watch?v=ZjIKUMtW37c",
+  "Tríceps corda": "https://www.youtube.com/watch?v=YQ6MRBeyIAE",
+  "Tríceps testa": "https://www.youtube.com/watch?v=VakpIeaaeXA",
+  "Puxada frontal na polia": "https://www.youtube.com/watch?v=BOW9my4J_ek",
+  "Remada curvada com barra": "https://www.youtube.com/watch?v=_vO2dAnz__c",
+  "Remada baixa no cabo": "https://www.youtube.com/watch?v=5zvxMuf378g",
+  "Rosca direta com barra": "https://www.youtube.com/watch?v=Et1wgGMGW8w",
+  "Rosca martelo": "https://www.youtube.com/watch?v=R0yB-Q7Ighs",
+  "Agachamento livre": "https://www.youtube.com/watch?v=rM6SDUdl9fs",
+  "Leg press 45": "https://www.youtube.com/watch?v=waAxlYvtCcI",
+  "Cadeira extensora": "https://www.youtube.com/watch?v=RHgqvYAed_8",
+  "Mesa flexora": "https://www.youtube.com/watch?v=8Nat6GRiEoc",
+  "Panturrilha em pé": "https://www.youtube.com/watch?v=cklp_Xh5V8M",
+  "Desenvolvimento com halteres": "https://www.youtube.com/watch?v=eufDL9MmF8A",
+  "Levantamento terra": "https://www.youtube.com/watch?v=6E-rUBDENzA",
+  "Elevação lateral": "https://www.youtube.com/watch?v=jannLx4RxKo",
+  "Flexão de braços": "https://www.youtube.com/watch?v=RRi0-tvte6A",
+  "Abdominal supra": "https://www.youtube.com/watch?v=tGobCIvFPHI",
+  "Afundo com halteres": "https://www.youtube.com/watch?v=6Zz_RG0EHFE",
+  "Elevação pélvica": "https://www.youtube.com/watch?v=kvmT_ZlgVI0",
+  "Rosca alternada com halteres": "https://www.youtube.com/watch?v=P-boCddkUVg",
+  "Esteira": "https://www.youtube.com/watch?v=nQdMzvhaSrI",
+  "Supino declinado com barra": "https://www.youtube.com/watch?v=ifWEwZDWMAw",
+  "Crossover na polia": "https://www.youtube.com/watch?v=E3aha5zhlc0",
+  "Peck deck": "https://www.youtube.com/watch?v=a5XwjsD3AOI",
+  "Remada unilateral com halter": "https://www.youtube.com/watch?v=JE3XUqMyHXo",
+  "Barra fixa": "https://www.youtube.com/watch?v=oH-NrOccUOg",
+  "Pulldown com corda": "https://www.youtube.com/watch?v=e9XbR9Hvm4c",
+  "Desenvolvimento militar com barra": "https://www.youtube.com/watch?v=8YV_80VjJGc",
+  "Elevação frontal": "https://www.youtube.com/watch?v=jhxLYSm_P-k",
+  "Crucifixo inverso": "https://www.youtube.com/watch?v=r1efeCcUW-8",
+  "Encolhimento de ombros": "https://www.youtube.com/watch?v=qCOOMxQPPSA",
+  "Rosca scott": "https://www.youtube.com/watch?v=zaAx8tPX64k",
+  "Rosca concentrada": "https://www.youtube.com/watch?v=NftBaXxrLJ4",
+  "Tríceps na polia com barra": "https://www.youtube.com/watch?v=iioOkPqsVr0",
+  "Tríceps francês": "https://www.youtube.com/watch?v=9EkGm94Q2Ms",
+  "Mergulho no banco": "https://www.youtube.com/watch?v=qAKB1H2kz2g",
+  "Stiff com barra": "https://www.youtube.com/watch?v=BHfY5-jGNDA",
+  "Agachamento búlgaro": "https://www.youtube.com/watch?v=gmDBJYTgRUA",
+  "Panturrilha sentado": "https://www.youtube.com/watch?v=Vp788-iQqiI",
+  "Glúteo no cabo (coice)": "https://www.youtube.com/watch?v=S2_Rsx-Ud2w",
+  "Cadeira abdutora": "https://www.youtube.com/watch?v=50qHGus1TZk",
+  "Agachamento sumô": "https://www.youtube.com/watch?v=u_TTcv8FvOk",
+  "Prancha": "https://www.youtube.com/watch?v=9dn5Fb3cSoE",
+  "Elevação de pernas": "https://www.youtube.com/watch?v=cCGSbAjIP3k",
+  "Abdominal na polia": "https://www.youtube.com/watch?v=eB-LUPltCfM",
+  "Abdominal bicicleta": "https://www.youtube.com/watch?v=pIaXc4aH1VY",
+  "Bicicleta ergométrica": "https://www.youtube.com/watch?v=_NyqsWSkOKc",
+  "Elíptico": "https://www.youtube.com/watch?v=Rltlu55sBLE",
+  "Corda de pular": "https://www.youtube.com/watch?v=bB2BMeZTygg",
+};
+
 async function main() {
   let created = 0;
   let updated = 0;
@@ -94,11 +151,11 @@ async function main() {
     if (existing) {
       await prisma.exercise.update({
         where: { id: existing.id },
-        data: { muscleGroup: item.muscleGroup, description: item.description },
+        data: { muscleGroup: item.muscleGroup, description: item.description, ...(videos[item.name] ? { videoUrl: videos[item.name] } : {}) },
       });
       updated++;
     } else {
-      await prisma.exercise.create({ data: { ...item, createdById: null } });
+      await prisma.exercise.create({ data: { ...item, videoUrl: videos[item.name] ?? null, createdById: null } });
       created++;
     }
   }
