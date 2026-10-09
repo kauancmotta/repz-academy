@@ -3,6 +3,7 @@ import { authRouter } from "./modules/auth/auth.routes.js";
 import { exercisesRouter } from "./modules/exercises/exercises.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { invitesRouter, linkRouter, studentsRouter } from "./modules/links/links.routes.js";
+import { progressRouter, studentOverviewRouter } from "./modules/progress/progress.routes.js";
 import { exercisePerformanceRouter, sessionsRouter } from "./modules/sessions/sessions.routes.js";
 import { workoutsRouter } from "./modules/workouts/workouts.routes.js";
 
@@ -18,3 +19,5 @@ router.use("/exercises", exercisesRouter);
 router.use("/workouts", workoutsRouter);
 router.use("/sessions", sessionsRouter);
 router.use("/exercises", exercisePerformanceRouter);
+router.use("/progress", progressRouter);
+router.use("/students", studentOverviewRouter);
